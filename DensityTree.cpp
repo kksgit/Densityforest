@@ -1,7 +1,9 @@
-#include "DensityTree.h"
+#include "DensityTree.h" // add double LSG[2][4],RSG[2][4]  in .h public 
+//二维数组，第一维分别X==》0，Y==》1，第二维分别存放mean==>0，variance==>1，比例系数==>2,theta==>3。
 #include <iostream>
 #include <random>
 #include <cmath>
+# define PI 3.14159265358979323846
 using namespace cv;
 using namespace std;
 
@@ -34,7 +36,7 @@ void DensityTree::train()
 			
 			//sperate X into LS and RS
 			for(int p = 0; p < X.rows ; p++ ){
-				double temp = x.at<double>(p,i)
+				double temp = X.at<double>(p,i)
 				if(temp <= theta )
 				LS.push_back(temp);
 				else RS.push_back(temp);
@@ -46,91 +48,32 @@ void DensityTree::train()
 					LS_final = LS.clone();		
 					RS_final = RS.clone();
 			 }
-			 //meanStdDev(M,temp_m,temp_sd)
-			 
+		/*Scalar meanX;
+			Scalar meanY;
+			Scalar sdX;
+			Scalar sdY;
+			meanStdDev(S.col(0),meanX,sdX);
+			meanStdDev(S.col(1),meanY,sdY); 
+			WeakLearner node;
+                 node.leafNode(meanX[0],sdX[0]*sdX[0],meanY[0],sdY[0]*sdY[0],S.rows);
+                *///问流畅这段代码的含义
+		//compute the Gaussian parameter of LS and RS.
+		// add double LSG[4],RSG[4]  in .h public 
+		//二维数组，第一维分别X==》0，Y==》1，第二维分别存放mean==>0，variance==>1，比例系数==>2,theta==>3。
+		        double temp_m, temp_sd;/// temp is a mat or double????????????????
 		
-		
-		
-		}
+		meanStdDev(LS,temp_m, temp_sd);
+		LSG[i][0]=temp_m.at<double>(0,0);
+		LSG[i][1]= temp_sd.at<double>(0,0)*temp_sd.at<double>(0,0);
+		LSG[i][2]=(double)LS.rows/(double)X.rows;
+		LSG[i][3] = theta_split;
+		meanStdDev(RS,temp_m, temp_sd);
+		RSG[i][0]=temp_m.at<double>(0,0);
+		RSG[i][1]= temp_sd.at<double>(0,0)*temp_sd.at<double>(0,0);
+		RSG[i][2]=(double)RS.rows/(double)X.rows;
+		RSG[i][3] = theta_split;
+	}			
 
-	int N = pow(2, D - 1);//no. of leaf nodes
-
-								  ////bagging: boostrap aggregation.  without index
-								  //Mat samplingSet;
-								  //for (int i = 0; i < N; i++)
-								  //{
-								  //	int random = rand() % N;
-								  //	Mat R = X.rowRange(random, random + 1).clone();//from 0 to N
-								  //	samplingSet.push_back(R);
-								  //}
-
-								  //max min
-			//double minv = 0.0, maxv = 0.0, range = 0.0;
-			//double* minp = &minv;
-			//double* maxp = &maxv;
-			//Mat	X1 = X.col(0).clone();//X.colRange(0, 1).clone();
-			//minMaxIdx(X1, minp, maxp);
-			//range = maxv - minv; //around 32.9369
-								 //cout << minv << endl;
-
-			//Mat leftSet, rightSet;// , leftResult, rightResult;//left set; right set
-			//double splitPoint, InfoGain = 0.0;
-			for (int i = 0; i < n_thresholds; i++)
-			{
-				InfoGain = 0.0;
-				//srand((unsigned)time(NULL));
-				double randNo = rand() / double(RAND_MAX);//double from 0 to 1
-				double point = minv + range * randNo;
-
-				//get 2 (left,right) sets, clear first
-				int countX = 0, countY = 0;
-				leftSet.release();
-				rightSet.release();
-				for (int x = 0; x < X.rows; x++)
-				{
-					double* data = X.ptr<double>(x);
-					//cout << data[0]<<"---------------------"<< point << endl;
-					if (data[0] <= point)
-					{
-						Mat L = X.row(x).clone();//from 0 to N: rowRange(x, x + 1)
-						leftSet.push_back(L);
-						//countX++;//leftSet.rows
-					}
-					else
-					{
-						Mat R = X.row(x).clone();//from 0 to N: rowRange(x, x + 1)
-						rightSet.push_back(R);
-						//countY++;
-					}
-				}//cout << leftSet << countX <<endl;
-
-
-				if (InfoGain < getInfoGain(X, leftSet, rightSet))
-				{
-					InfoGain = getInfoGain(X, leftSet, rightSet);//, countX, countY);//leftSet.rows, rightSet.rows
-					leftResult = leftSet;
-					rightResult = rightSet;
-					splitPoint = point;
-				}
-
-			}
-
-			cout << "=======================" << endl;
-
-
-			//store the data
-			mean = getMean(leftResult);
-			means.push_back(mean);
-			variances.push_back(getVariance(leftResult, mean));
-
-			mean = getMean(rightResult);
-			means.push_back(mean);
-			variances.push_back(getVariance(rightResult, mean));
-
-			cout << "Not implemented " << means.size() << endl;//Temporla
-		
-	
-	
 	
 	
 	
@@ -141,8 +84,26 @@ void DensityTree::train()
 }
 Mat DensityTree::densityXY()
 {
-    
-    return X;//Temporal
+    	// add double LSG[4],RSG[4]  in .h public
+	//二维数组，第一维分别X==》0，Y==》1，第二维分别存放mean==>0，variance==>1，比例系数==>2,theta==>3。
+	Mat density;
+	double val;
+	for(int i=0; i < X.rows; i++){
+		val = X.at<double>(i,0);
+		if(val<=LSG[i][3])
+	     density.at<double>(i,0)=LSG[i][2]*1.0/sqrt(2.0*PI*LSG[i][1])*exp(-0.5*pow(val-LSG[i][0],2)/LSG[i][1]);
+		else  
+	     density.at<double>(i,0)=RSG[i][2]*1.0/sqrt(2.0*PI*RSG[i][1])*exp(-0.5*pow(X.at<double>(i,0)-RSG[i][0],2)/RSG[i][1]);
+	
+	}
+	
+	
+	
+	
+	
+	
+	
+    return density;//Temporal
 }
 
 
