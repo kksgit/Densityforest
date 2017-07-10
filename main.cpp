@@ -1,6 +1,6 @@
-#include "opencv2/highgui.hpp"
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/core/core.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #include "DensityTree.h"
 #include <iostream>
 //#include <vector>
@@ -143,6 +143,6 @@ void plotDensities(Mat data, vector<Mat> density, int dim, char const * name)
         if(j==1)g=0;
         if(j==2)b=0;
     }
-    namedWindow( name, WINDOW_AUTOSIZE );
+    namedWindow( name, WINDOW_NORMAL );
     imshow( name, origImage ); 
 }
